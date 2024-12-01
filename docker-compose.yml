@@ -3,14 +3,14 @@ version: '3'
 services:
   myDB:
     image: postgres:15.3
-    container_name: users-db-postgres
+    container_name: my-database
     restart: always
     ports:
       - 5432:5432
     environment:
-      - POSTGRES_USER=william
+      - POSTGRES_USER=alumno
       - POSTGRES_PASSWORD=123456
-      - POSTGRES_DB=users-db-postgresql
+      - POSTGRES_DB=course-db
     volumes:
       - ./postgres:/var/lib/postgresql/data
   
