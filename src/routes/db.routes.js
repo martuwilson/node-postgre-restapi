@@ -1,5 +1,5 @@
 import express from 'express';
-import { createUsersTable, createUser, getUsers, getUser } from '../controllers/db.controller.js';
+import { createUsersTable, createUser, getUsers, getUser, editUser } from '../controllers/db.controller.js';
 
 const router = express.Router();
 
@@ -14,6 +14,9 @@ router.post('/create-table', createUsersTable);
 
 //Ruta para la creacion de un user
 router.post('/create-user', createUser);
+
+//Ruta para la edicion de un user
+router.put('/users/:id', editUser);
 
 // Exporta el router usando la sintaxis ESM
 export default router;

@@ -32,7 +32,7 @@ const createUser = async (req, res) => {
   `;
 
   try {
-    const result = await pool.query(query, [name, email, password]);  // Ejecuta la consulta SQL
+    const result = await pool.query(query, [name, email, password]);  
     res.json(result.rows[0]);  // Retorna el usuario recién creado
   } catch (error) {
     console.error('Error al crear el usuario:', error);
@@ -68,5 +68,26 @@ const getUser = async (req, res) => {
     }
 }
 
+////////////////////////////////
+// EDIT user by id
+const editUser = async (req, res) => {
+  const { id } = req.params;
+  const { name, email, password } = req.body;
+  const query = `
+    UPDATE users
+    SET name = $1, email = $2, password = $3
+    WHERE id = $4
+    RETURNING *;
+  `;
+
+  try {
+    const result = await pool.query(query, [name, email, password, id]);
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error al editar el usuario:', error);
+    res.status(500).send('Hubo un error al editar el usuario');
+  }
+};
+
 // Exporta la función usando la sintaxis ESM
-export { createUsersTable, createUser, getUsers, getUser };
+export { createUsersTable, createUser, getUsers, getUser, editUser };
