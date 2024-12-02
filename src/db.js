@@ -1,13 +1,16 @@
-import pkg from 'pg';  // Importa el paquete 'pg'
-const { Pool } = pkg;  // Extrae 'Pool' desde el objeto importado
+import pkg from 'pg';  
+import dotenv from 'dotenv';
+const { Pool } = pkg;
+
+dotenv.config();
 
 const pool = new Pool({
-  user: 'alumno',
-  host: 'localhost',
-  database: 'course-db',
-  password: '123456',
-  port: 5432,
-});
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: `${process.env.DB_PASSWORD}`,
+    port: process.env.DB_PORT,
+  });
 
 pool
   .connect()

@@ -1,10 +1,11 @@
-
+import dotenv from 'dotenv';
 import express from 'express'; 
 import { PORT } from './config.js'; 
 import userRoutes from './routes/users.routes.js'; 
 import dbRoutes from './routes/db.routes.js'; 
 
-const app = express(); 
+const app = express();
+dotenv.config();
 
 app.use(express.json()); // Middleware para analizar los cuerpos JSON de los POST
 
