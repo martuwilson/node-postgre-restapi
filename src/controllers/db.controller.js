@@ -40,5 +40,17 @@ const createUser = async (req, res) => {
   }
 };
 
+////////////////////////////////
+// Get all users
+const getUsers = async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM users');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener los usuarios:', error);
+    res.status(500).send('Hubo un error al obtener los usuarios');
+  }
+};
+
 // Exporta la función usando la sintaxis ESM
-export { createUsersTable, createUser };
+export { createUsersTable, createUser, getUsers };

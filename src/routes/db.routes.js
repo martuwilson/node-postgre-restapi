@@ -1,7 +1,10 @@
 import express from 'express';
-import { createUsersTable, createUser } from '../controllers/db.controller.js';
+import { createUsersTable, createUser, getUsers } from '../controllers/db.controller.js';
 
-const router = express.Router(); // Crea el router
+const router = express.Router();
+
+//GET all users
+router.get('/users', getUsers);
 
 // Define la ruta que llama a la función para crear la tabla
 router.post('/create-table', createUsersTable);  
