@@ -89,5 +89,21 @@ const editUser = async (req, res) => {
   }
 };
 
+////////////////////////////////
+// DELETE user by id
+const deleteUser = async (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM users WHERE id = $1';
+
+  try {
+    await pool.query(query, [id]);
+    res.send('Usuario eliminado exitosamente');
+  } catch (error) {
+    console.error('Error al eliminar el usuario:', error);
+    res.status(500).send('Hubo un error al eliminar el usuario');
+  }
+};
+
+
 // Exporta la función usando la sintaxis ESM
-export { createUsersTable, createUser, getUsers, getUser, editUser };
+export { createUsersTable, createUser, getUsers, getUser, editUser, deleteUser };
