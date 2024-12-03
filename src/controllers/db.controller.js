@@ -1,4 +1,14 @@
+import Joi from 'joi';
 import pool from '../db.js';  // Importa la conexión a la base de datos
+
+
+////////////////////////////////
+// Schema de validación para los usuarios
+const userSchema = Joi.object({
+    name: Joi.string().min(3).max(100).required(), 
+    email: Joi.string().email().required(),
+    password: Joi.string().min(8).required()
+  });
 
 //Crear la tabla de usuarios de la base de datos
 const createUsersTable = async (req, res) => {
@@ -26,7 +36,14 @@ const createUsersTable = async (req, res) => {
 ////////////////////////////////
 //Crear un usuario en la base de datos
 const createUser = async (req, res) => {
-  const { name, email, password } = req.body;  // Extrae los datos del cuerpo de la petición
+
+    const { error, value } = userSchema.validate(req.body);
+
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+  const { name, email, password } = value;
   const query = `
     INSERT INTO users (name, email, password) 
     VALUES ($1, $2, $3)
@@ -73,38 +90,83 @@ const getUser = async (req, res) => {
 ////////////////////////////////
 // EDIT user by id
 const editUser = async (req, res) => {
-  const { id } = req.params;
-  const { name, email, password } = req.body;
-  const query = `
-    UPDATE users
-    SET name = $1, email = $2, password = $3
-    WHERE id = $4
-    RETURNING *;
-  `;
-
-  try {
-    const result = await pool.query(query, [name, email, password, id]);
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error al editar el usuario:', error);
-    res.status(500).send('Hubo un error al editar el usuario');
-  }
-};
+    const paramsSchema = Joi.object({
+      id: Joi.string().uuid().required()
+    });
+  
+    const bodySchema = Joi.object({
+      name: Joi.string().min(3).max(100),
+      email: Joi.string().email(),
+      password: Joi.string().min(8)
+    });
+  
+    const { error: paramsError, value: paramsValue } = paramsSchema.validate(req.params);
+    const { error: bodyError, value: bodyValue } = bodySchema.validate(req.body);
+  
+    if (paramsError) {
+      return res.status(400).json({ error: paramsError.details[0].message });
+    }
+  
+    if (bodyError) {
+      return res.status(400).json({ error: bodyError.details[0].message });
+    }
+  
+    const { id } = paramsValue;
+    const { name, email, password } = bodyValue;
+  
+    try {
+      const query = `
+        UPDATE users
+        SET name = COALESCE($1, name),
+            email = COALESCE($2, email),
+            password = COALESCE($3, password)
+        WHERE id = $4
+        RETURNING *;
+      `;
+  
+      const result = await pool.query(query, [name, email, password, id]);
+  
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+  
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error('Error al editar el usuario:', error);
+      res.status(500).send('Hubo un error al editar el usuario');
+    }
+  };
+  
 
 ////////////////////////////////
 // DELETE user by id
 const deleteUser = async (req, res) => {
-  const { id } = req.params;
-  const query = 'DELETE FROM users WHERE id = $1';
-
-  try {
-    await pool.query(query, [id]);
-    res.send('Usuario eliminado exitosamente');
-  } catch (error) {
-    console.error('Error al eliminar el usuario:', error);
-    res.status(500).send('Hubo un error al eliminar el usuario');
-  }
-};
+    const schema = Joi.object({
+      id: Joi.string().uuid().required()
+    });
+  
+    const { error, value } = schema.validate(req.params);
+  
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+  
+    const { id } = value;
+  
+    try {
+      const query = 'DELETE FROM users WHERE id = $1';
+      const result = await pool.query(query, [id]);
+  
+      if (result.rowCount === 0) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+  
+      res.send('Usuario eliminado exitosamente');
+    } catch (error) {
+      console.error('Error al eliminar el usuario:', error);
+      res.status(500).send('Hubo un error al eliminar el usuario');
+    }
+  };
 
 
 // Exporta la función usando la sintaxis ESM
