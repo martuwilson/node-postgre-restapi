@@ -76,7 +76,7 @@ const createUser = async (req, res) => {
 // Get all users
 const getUsers = async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM users');
+    const result = await pool.query('SELECT id, name, email, created_at FROM users');
     res.json(result.rows);
   } catch (error) {
     console.error('Error al obtener los usuarios:', error);
@@ -88,7 +88,7 @@ const getUsers = async (req, res) => {
 // Get a user by id
 const getUser = async (req, res) => {
   const { id } = req.params;
-  const query = 'SELECT * FROM users WHERE id = $1';
+  const query = 'SELECT id, name, email, created_at FROM users WHERE id = $1';
 
   try {
     const result = await pool.query(query, [id]);
