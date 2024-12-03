@@ -104,16 +104,17 @@ const getUser = async (req, res) => {
 // EDIT user by id
 const editUser = async (req, res) => {
     const paramsSchema = Joi.object({
-      id: Joi.string().uuid().required()
+      id: Joi.string().uuid().required() 
     });
   
     const bodySchema = Joi.object({
-      name: Joi.string().min(3).max(100),
+      name: Joi.string().min(3).max(100), 
       email: Joi.string().email(),
       password: Joi.string().min(8)
     });
   
     const { error: paramsError, value: paramsValue } = paramsSchema.validate(req.params);
+
     const { error: bodyError, value: bodyValue } = bodySchema.validate(req.body);
   
     if (paramsError) {
@@ -128,27 +129,47 @@ const editUser = async (req, res) => {
     const { name, email, password } = bodyValue;
   
     try {
-      const query = `
-        UPDATE users
-        SET name = COALESCE($1, name),
-            email = COALESCE($2, email),
-            password = COALESCE($3, password)
-        WHERE id = $4
-        RETURNING *;
-      `;
+      let query = `UPDATE users SET `;
+      const values = [];
+      let valueIndex = 1;
   
-      const result = await pool.query(query, [name, email, password, id]);
+      if (name) {
+        query += `name = $${valueIndex++}, `;
+        values.push(name);
+      }
+  
+      if (email) {
+        query += `email = $${valueIndex++}, `;
+        values.push(email);
+      }
+  
+      if (password) {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        query += `password = $${valueIndex++}, `;
+        values.push(hashedPassword);
+      }
+  
+      query = query.slice(0, -2); // Eliminar la coma final
+      query += ` WHERE id = $${valueIndex} RETURNING *;`;
+  
+      values.push(id);
+  
+      const result = await pool.query(query, values);
   
       if (result.rows.length === 0) {
         return res.status(404).json({ message: 'Usuario no encontrado' });
       }
   
-      res.json(result.rows[0]);
+      const user = result.rows[0];
+      delete user.password;
+  
+      res.json(user);
     } catch (error) {
       console.error('Error al editar el usuario:', error);
       res.status(500).send('Hubo un error al editar el usuario');
     }
   };
+  
   
 
 ////////////////////////////////
