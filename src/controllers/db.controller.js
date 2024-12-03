@@ -1,5 +1,6 @@
 import Joi from 'joi';
-import pool from '../db.js';  // Importa la conexión a la base de datos
+import bcrypt from 'bcrypt';
+import pool from '../db.js';
 
 
 ////////////////////////////////
@@ -34,30 +35,42 @@ const createUsersTable = async (req, res) => {
   
 
 ////////////////////////////////
-//Crear un usuario en la base de datos
 const createUser = async (req, res) => {
-
     const { error, value } = userSchema.validate(req.body);
-
+  
     if (error) {
       return res.status(400).json({ error: error.details[0].message });
     }
+  
+    const { name, email, password } = value;
+  
+    try {
+      const emailCheckQuery = 'SELECT id FROM users WHERE email = $1';
+      const emailCheckResult = await pool.query(emailCheckQuery, [email]);
+  
+      if (emailCheckResult.rowCount > 0) {
+        return res.status(409).json({ error: 'Error con el mail ingresado' });
+      }
+  
 
-  const { name, email, password } = value;
-  const query = `
-    INSERT INTO users (name, email, password) 
-    VALUES ($1, $2, $3)
-    RETURNING *;
-  `;
-
-  try {
-    const result = await pool.query(query, [name, email, password]);  
-    res.json(result.rows[0]);  // Retorna el usuario recién creado
-  } catch (error) {
-    console.error('Error al crear el usuario:', error);
-    res.status(500).send('Hubo un error al crear el usuario');
-  }
-};
+      const hashedPassword = await bcrypt.hash(password, 10);
+  
+      const query = `
+        INSERT INTO users (name, email, password) 
+        VALUES ($1, $2, $3)
+        RETURNING *;
+      `;
+      const result = await pool.query(query, [name, email, hashedPassword]);
+  
+      const user = { ...result.rows[0] };
+      delete user.password;
+      res.json(user);
+    } catch (error) {
+      console.error('Error al crear el usuario:', error);
+      res.status(500).send('Hubo un error al crear el usuario');
+    }
+  };
+  
 
 ////////////////////////////////
 // Get all users
