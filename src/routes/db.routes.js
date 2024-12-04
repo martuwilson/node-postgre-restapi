@@ -21,10 +21,10 @@ router.post('/create-user', createUser);
 router.post('/login', loginUser)
 
 
-router.put('/users/:id', editUser);
+router.put('/users/:id', verifyToken, editUser);
 
 
-router.delete('/users/:id', deleteUser);
+router.delete('/users/:id', verifyToken, deleteUser);
 
 
 ////////////////////////////////
