@@ -2,6 +2,7 @@ import Joi from 'joi';
 import bcrypt from 'bcrypt';
 import pool from '../db.js';
 
+import { generateToken } from '../modules/auth_jwt.js';
 
 ////////////////////////////////
 // Schema de validación para los usuarios
@@ -202,6 +203,34 @@ const deleteUser = async (req, res) => {
     }
   };
 
+////////////////////////////////
+//log with json web token
 
-// Exporta la función usando la sintaxis ESM
-export { createUsersTable, createUser, getUsers, getUser, editUser, deleteUser };
+const loginUser = async (req, res) => {
+    const { email, password } = req.body;
+  
+    try {
+      const query = 'SELECT * FROM users WHERE email = $1';
+      const result = await pool.query(query, [email]);
+  
+      if (result.rowCount === 0) {
+        return res.status(401).json({ error: 'Credenciales inválidas' });
+      }
+  
+      const user = result.rows[0];
+  
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: 'Credenciales inválidas' });
+      }
+  
+      const token = generateToken({ id: user.id, email: user.email });
+  
+      res.json({ token });
+    } catch (error) {
+      console.error('Error al iniciar sesión:', error);
+      res.status(500).send('Hubo un error al iniciar sesión');
+    }
+  };
+
+export { createUsersTable, createUser, getUsers, getUser, editUser, deleteUser, loginUser };
