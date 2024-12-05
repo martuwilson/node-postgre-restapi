@@ -1,6 +1,7 @@
 import Joi from 'joi';
 import bcrypt from 'bcrypt';
 import pool from '../db.js';
+import jwt from 'jsonwebtoken';
 
 import { generateToken } from '../modules/auth_jwt.js';
 
@@ -210,27 +211,27 @@ const loginUser = async (req, res) => {
     const { email, password } = req.body;
   
     try {
-      const query = 'SELECT * FROM users WHERE email = $1';
-      const result = await pool.query(query, [email]);
-  
-      if (result.rowCount === 0) {
-        return res.status(401).json({ error: 'Credenciales inválidas' });
-      }
-  
+      const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
       const user = result.rows[0];
   
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-      if (!isPasswordValid) {
-        return res.status(401).json({ error: 'Credenciales inválidas' });
+      if (!user) {
+        return res.status(401).json({ error: 'Usuario no encontrado' });
       }
   
-      const token = generateToken({ id: user.id, email: user.email });
+      const validPassword = await bcrypt.compare(password, user.password);
+      if (!validPassword) {
+        return res.status(401).json({ error: 'Contraseña incorrecta' });
+      }
+  
+      // Usa la función generateToken
+      const token = generateToken({ id: user.id, role: user.role });
   
       res.json({ token });
     } catch (error) {
-      console.error('Error al iniciar sesión:', error);
-      res.status(500).send('Hubo un error al iniciar sesión');
+      console.error(error);
+      res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
+  
 
 export { createUsersTable, createUser, getUsers, getUser, editUser, deleteUser, loginUser };

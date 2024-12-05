@@ -1,5 +1,4 @@
-// middlewares/check_admin.js
-const checkAdmin = (req, res, next) => {
+export const checkAdmin = (req, res, next) => {
     const { user } = req;
   
     if (!user) {
@@ -11,7 +10,4 @@ const checkAdmin = (req, res, next) => {
     }
   
     next();
-  };
-  
-  export default checkAdmin;
-  
+};
