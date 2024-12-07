@@ -3,23 +3,24 @@ import { createUsersTable, createUser, getUsers, getUser, editUser, deleteUser, 
 import { seedDatabase } from '../controllers/seed.controller.js';
 import { verifyToken } from '../modules/auth_jwt.js';
 import { checkAdmin } from '../middlewares/check_admin.js';
+import { loginLimiter, generalLimiter } from '../middlewares/rate_limit.js';
 
 const router = express.Router();
 
 
-router.get('/users', verifyToken, getUsers);
+router.get('/users', verifyToken, generalLimiter, getUsers);
 
 
-router.get('/users/:id', verifyToken, getUser);
+router.get('/users/:id', verifyToken, generalLimiter, getUser);
 
 
 router.post('/create-table', verifyToken, checkAdmin, createUsersTable);  
 
 
-router.post('/create-user',  verifyToken, checkAdmin, createUser);
+router.post('/create-user',  verifyToken, checkAdmin, loginLimiter, createUser);
 
 
-router.post('/login', loginUser)
+router.post('/login', loginLimiter, loginUser)
 
 
 router.put('/users/:id', verifyToken, checkAdmin, editUser);
