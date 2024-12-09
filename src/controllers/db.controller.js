@@ -2,6 +2,8 @@ import Joi from 'joi';
 import bcrypt from 'bcrypt';
 import pool from '../db.js';
 import jwt from 'jsonwebtoken';
+import { sendEmail } from '../utils/email.js';
+
 
 import { generateToken } from '../modules/auth_jwt.js';
 
@@ -26,8 +28,8 @@ const createUsersTable = async (req, res) => {
     `;
   
     try {
-      await pool.query(`CREATE EXTENSION IF NOT EXISTS "pgcrypto";`); // Asegura que la extensión esté habilitada
-      await pool.query(query);  // Ejecuta la consulta para crear la tabla
+      await pool.query(`CREATE EXTENSION IF NOT EXISTS "pgcrypto";`); 
+      await pool.query(query);
       res.send('Tabla "users" creada exitosamente');
     } catch (error) {
       console.error('Error al crear la tabla "users":', error);
@@ -38,40 +40,46 @@ const createUsersTable = async (req, res) => {
 
 ////////////////////////////////
 const createUser = async (req, res) => {
-    const { error, value } = userSchema.validate(req.body);
-  
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
-  
-    const { name, email, password } = value;
-  
-    try {
-      const emailCheckQuery = 'SELECT id FROM users WHERE email = $1';
-      const emailCheckResult = await pool.query(emailCheckQuery, [email]);
-  
-      if (emailCheckResult.rowCount > 0) {
-        return res.status(409).json({ error: 'Error con el mail ingresado' });
-      }
-  
+  const { error, value } = userSchema.validate(req.body);
 
-      const hashedPassword = await bcrypt.hash(password, 10);
-  
-      const query = `
-        INSERT INTO users (name, email, password) 
-        VALUES ($1, $2, $3)
-        RETURNING *;
-      `;
-      const result = await pool.query(query, [name, email, hashedPassword]);
-  
-      const user = { ...result.rows[0] };
-      delete user.password;
-      res.json(user);
-    } catch (error) {
-      console.error('Error al crear el usuario:', error);
-      res.status(500).send('Hubo un error al crear el usuario');
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
+  const { name, email, password, role } = value;
+
+  try {
+    const emailCheckQuery = 'SELECT id FROM users WHERE email = $1';
+    const emailCheckResult = await pool.query(emailCheckQuery, [email]);
+
+    if (emailCheckResult.rowCount > 0) {
+      return res.status(409).json({ error: 'Error con el mail ingresado' });
     }
-  };
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const query = `
+      INSERT INTO users (name, email, password, role) 
+      VALUES ($1, $2, $3, $4)
+      RETURNING *;
+    `;
+    const result = await pool.query(query, [name, email, hashedPassword, role]);
+
+    const user = { ...result.rows[0] };
+    delete user.password;
+    await sendEmail(
+      email,
+      '¡Bienvenido a nuestra plataforma!',
+      `Hola ${name}, has sido agregado como usuario en nuestra plataforma. Tu rol es: ${role}.`
+    );
+
+    res.json(user);
+  } catch (error) {
+    console.error('Error al crear el usuario:', error);
+    res.status(500).send('Hubo un error al crear el usuario');
+  }
+};
+
   
 
 ////////////////////////////////
