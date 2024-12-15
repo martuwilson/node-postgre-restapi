@@ -46,7 +46,7 @@ const createUser = async (req, res) => {
     return res.status(400).json({ error: error.details[0].message });
   }
 
-  const { name, email, password, role } = value;
+  const { name, email, password, role = 'user' } = value;
 
   try {
     const emailCheckQuery = 'SELECT id FROM users WHERE email = $1';
