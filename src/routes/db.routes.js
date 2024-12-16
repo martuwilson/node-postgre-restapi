@@ -1,5 +1,5 @@
 import express from 'express';
-import { createUsersTable, createUser, getUsers, getUser, editUser, deleteUser, loginUser } from '../controllers/db.controller.js';
+import { createUsersTable, createUser, getUsers, getUser, editUser, deleteUser, loginUser, resetPassword, forgotPassword } from '../controllers/db.controller.js';
 import { seedDatabase } from '../controllers/seed.controller.js';
 import { verifyToken } from '../modules/auth_jwt.js';
 import { checkAdmin } from '../middlewares/check_admin.js';
@@ -28,6 +28,11 @@ router.put('/users/:id', verifyToken, checkAdmin, editUser);
 
 router.delete('/users/:id', verifyToken, checkAdmin, deleteUser);
 
+////////////////////////////////
+// Passwords
+router.post('/users/reset-password', resetPassword);
+
+router.post('/users/forgot-password', forgotPassword);
 
 ////////////////////////////////
 // Seed data

@@ -240,6 +240,65 @@ const loginUser = async (req, res) => {
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
-  
 
-export { createUsersTable, createUser, getUsers, getUser, editUser, deleteUser, loginUser };
+  ////////////////////////////////
+// Forgot Password
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const result = await pool.query('SELECT id, email FROM users WHERE email = $1', [email]);
+    const user = result.rows[0];
+
+    if (!user) {
+      return res.status(404).json({ error: 'El email no está registrado' });
+    }
+
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    await sendEmail(
+      user.email,
+      'Restablecer contraseña',
+      `Haga clic en el siguiente enlace para restablecer su contraseña: ${resetLink}`
+    );
+
+    res.json({ message: 'Enlace de restablecimiento enviado a su correo electrónico' });
+  } catch (error) {
+    console.error('Error en forgotPassword:', error);
+    res.status(500).send('Error al procesar la solicitud');
+  }
+};
+
+////////////////////////////////
+// Reset Password
+const resetPassword = async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  try {
+   
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const schema = Joi.string().min(8).required();
+    const { error } = schema.validate(newPassword);
+    if (error) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    const query = 'UPDATE users SET password = $1 WHERE id = $2';
+    await pool.query(query, [hashedPassword, decoded.id]);
+
+    res.json({ message: 'Contraseña restablecida exitosamente' });
+  } catch (error) {
+    console.error('Error en resetPassword:', error);
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'El token ha expirado' });
+    }
+    res.status(500).send('Error al restablecer la contraseña');
+  }
+};
+
+  
+export { createUsersTable, createUser, getUsers, getUser, editUser, deleteUser, loginUser, forgotPassword, resetPassword };
